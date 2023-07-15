@@ -1,0 +1,163 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: vanilla-essential-backend-postgres
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
+    healthcheck:
+      test: pg_isready -U postgres -h localhost
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    volumes:
+      - vanilla_essential_backend_postgres:/var/lib/postgresql/data
+    networks:
+      - default
+
+  redis:
+    container_name: vanilla-essential-backend-redis
+    image: redis:alpine
+    restart: unless-stopped
+    command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
+    healthcheck:
+      test: redis-cli -a ${REDIS_PASSWORD} ping | grep PONG
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    env_file: .env
+    volumes:
+      - vanilla_essential_backend_redis:/data
+    networks:
+      - default
+
+  s3:
+    container_name: vanilla-essential-backend-s3
+    image:  minio/minio:latest
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-password}
+      - MINIO_REGION=${STORAGE_REGION:-ap-southeast-1}
+    entrypoint: sh
+    command:
+        - -c
+        - |
+          mkdir -p /data/${DIRECTUS_BUCKET_NAME:-directus-uploads}
+          mkdir -p /data/${MISCELLANEOUS_BUCKET_NAME:-miscellaneous-uploads}
+          minio server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - vanilla_essential_backend_storage:/data
+    networks:
+      - default
+      - cloudflare
+
+  ## Auxiliary services
+  directus:
+    image: directus/directus:latest
+    container_name: vanilla-essential-backend-directus
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+    environment:
+      KEY: ${DIRECTUS_KEY:-key}
+      SECRET: ${DIRECTUS_SECRET:-secret}
+
+      DB_CLIENT: 'pg'
+      DB_HOST: ${DATABASE_HOST:-vanilla-essential-backend-postgres}
+      DB_PORT: 5432
+      DB_DATABASE: ${DATABASE_NAME:-postgres}
+      DB_USER: ${DATABASE_USER:-postgres}
+      DB_PASSWORD: ${DATABASE_PASSWORD:-password}
+
+      REDIS_HOST: vanilla-essential-backend-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+
+      RATE_LIMITER_ENABLED: 'true'
+      RATE_LIMITER_STORE: 'redis'
+
+      CACHE_ENABLED: 'true'
+      CACHE_STORE: 'redis'
+
+      STORAGE_LOCATIONS: 's3'
+      STORAGE_S3_DRIVER: 's3'
+      STORAGE_S3_KEY: ${STORAGE_ACCESS_KEY_ID:-admin}
+      STORAGE_S3_SECRET: ${STORAGE_SECRET_ACCESS_KEY:-password}
+      STORAGE_S3_REGION: ${STORAGE_REGION:-ap-southeast-1}
+      STORAGE_S3_BUCKET: ${DIRECTUS_BUCKET_NAME:-directus-uploads}
+      STORAGE_S3_ENDPOINT: ${DIRECTUS_STORAGE_ENDPOINT:-http://vanilla-essential-backend-s3:9000}
+      STORAGE_S3_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Password1234!}
+
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8055/server/health || exit 1
+      start_period: 5s
+      interval: 15s
+      timeout: 15s
+      retries: 3
+    restart: unless-stopped
+    volumes:
+      - vanilla_essential_backend_directus:/directus/extensions
+    networks:
+      - default
+      - cloudflare
+
+  backend:
+    build:
+      context: backend/
+      dockerfile: Dockerfile
+    command: "python main.py"
+    container_name: vanilla-essential-backend
+    depends_on:
+      directus:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+      
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8000"]
+        interval: 5s
+        timeout: 15s
+        retries: 10
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+    networks:
+      - default
+      - cloudflare
+
+volumes:
+  vanilla_essential_backend_directus:
+  vanilla_essential_backend_postgres:
+  vanilla_essential_backend_redis:
+  vanilla_essential_backend_storage:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${MINIO_MEDIA_ROOT:-/Volumes/wd-raid1/vanilla-essential-backend/vanilla_essential_backend_storage}
+      o: bind
+
+networks:
+  default:
+  cloudflare:
+    name: ${CLOUDFLARE_NETWORK:-portainer_x_cloudflare_default}
+    external: true
