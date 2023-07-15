@@ -1,6 +1,5 @@
-# vanilla-essential-backend
-Common backend utils developed and used by Vanilla Republic 🍀
-* main installation : `$ pip install -U pip "pandas[performance, computation, excel, html, postgresql, mysql, sql-other]" jupyter httpx "black[jupyter]" "fastapi[all]"`
+# main installation: 
+`$ pip install -U pip "pandas[performance, computation, excel, html, postgresql, mysql, sql-other]" jupyter httpx "black[jupyter]" "fastapi[all]"`
 
 # Pre-requisites
 * "Directus" service is expected to be readily available
