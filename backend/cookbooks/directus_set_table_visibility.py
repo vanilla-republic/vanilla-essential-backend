@@ -7,11 +7,16 @@
 # ## for jupyter debugging
 # %cd ../../utilities
 # import sys
-# sys.path.append('..')
+
+# sys.path.append("..")
 
 # import asyncio
-# if asyncio.get_event_loop().is_running(): # Only patch if needed (i.e. running in Notebook, Spyder, etc)
+
+# if (
+#     asyncio.get_event_loop().is_running()
+# ):  # Only patch if needed (i.e. running in Notebook, Spyder, etc)
 #     import nest_asyncio
+
 #     nest_asyncio.apply()
 
 
@@ -44,10 +49,8 @@ load_dotenv(dotenv_path=env_path)
 
 
 import asyncio
+import httpx
 from typing import List
-import inspect
-import logging
-import pandas as pd
 
 
 # # Project Utilities 🛰
@@ -76,16 +79,18 @@ except:
 
 
 async def directus_set_table_visibility(
-    access_token=os.getenv("DIRECTUS_ACCESS_TOKEN"),
-    base_url=os.getenv(
+    access_token: str = os.getenv("DIRECTUS_ACCESS_TOKEN"),
+    base_url: str
+    | httpx.URL = os.getenv(
         "DIRECTUS_BASE_URL", "http://vanilla-essential-backend-directus:8055"
     ),
-    ignored_collections=[
+    ignored_collections: List[str] = [
         "directus_",
         "database_multipleselect",
         "database_relation",
         "database_table",
     ],
+    timeout: int | httpx.Timeout = httpx.AsyncClient().timeout,
 ):
     try:
         aclient = AsyncDirectusAPI(
