@@ -12,3 +12,9 @@
 * Directus-Auth compatible
 * parse files (.xlsx, .csv) to JSON (API-ready)
 * parse bytes (from .xlsx, .csv) to JSON (API-ready)
+
+# Folder organization explained
+* `utilites/` : pre-cooked ingredients for handy usages. all files in the folder will not cross-import between modules
+* `cookbooks/` : combinations of utilites or anything within `backend/` folder. 1 cookbook will most-likely do only 1 thing
+* `models/` : definitions of (pydantic) schemas. Useful for request validations
+* `routers/` : API Endpoints to handle requests. They often utilise `models/`, `cookbooks/` and `utilites/` to correctly handle incoming requests
