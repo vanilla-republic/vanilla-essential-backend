@@ -99,7 +99,9 @@ def convert_uploaded_file_to_json(
 
     # pandas.read_x
     pd_read_kwargs = {
-        k: v for k, v in kwargs.items() if k in inspect.signature(pd.read_excel).parameters
+        k: v
+        for k, v in kwargs.items()
+        if k in inspect.signature(pd.read_excel).parameters
     }
     df = func(io, **pd_read_kwargs)
 
@@ -113,4 +115,3 @@ def convert_uploaded_file_to_json(
 
 # if __name__ == "__main__":
 #     json_output = convert_uploaded_file_to_json()
-
