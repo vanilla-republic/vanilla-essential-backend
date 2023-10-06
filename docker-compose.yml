@@ -146,15 +146,24 @@ services:
       - cloudflare
 
 volumes:
-  vanilla_essential_backend_directus:
-  vanilla_essential_backend_postgres:
-  vanilla_essential_backend_redis:
-  vanilla_essential_backend_storage:
+  vanilla_essential_backend_directus: &docker_volume
     driver: local
     driver_opts:
       type: none
-      device: ${MINIO_MEDIA_ROOT:-/Volumes/wd-raid1/vanilla-essential-backend/vanilla_essential_backend_storage}
       o: bind
+      device: ${VOLUME_DIRECTUS:-/Users/bachkukkik/Archives/docker_volumes/vanilla_essential_backend_directus}
+  vanilla_essential_backend_postgres:
+    <<: *docker_volume
+    driver_opts:
+      device: ${VOLUME_POSTGRES:-/Users/bachkukkik/Archives/docker_volumes/vanilla_essential_backend_postgres}
+  vanilla_essential_backend_redis:
+    <<: *docker_volume
+    driver_opts:
+      device: ${VOLUME_REDIS:-/Users/bachkukkik/Archives/docker_volumes/vanilla_essential_backend_redis}
+  vanilla_essential_backend_storage:
+    <<: *docker_volume
+    driver_opts:
+      device: ${VOLUME_MINIO:-/Volumes/wd-raid1/vanilla-baserow/vanilla_essential_backend_storage}
 
 networks:
   default:
