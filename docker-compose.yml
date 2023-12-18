@@ -50,7 +50,7 @@ services:
           mkdir -p /data/${MISCELLANEOUS_BUCKET_NAME:-miscellaneous-uploads}
           minio server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: timeout 5 bash -c "</dev/tcp/localhost/9000"
       interval: 5s
       timeout: 5s
       retries: 10
@@ -74,6 +74,7 @@ services:
     environment:
       KEY: ${DIRECTUS_KEY:-key}
       SECRET: ${DIRECTUS_SECRET:-secret}
+      PUBLIC_URL: ${DIRECTUS_PUBLIC_URL:-http://localhost:8055}
 
       DB_CLIENT: 'pg'
       DB_HOST: ${DATABASE_HOST:-vanilla-essential-backend-postgres}
@@ -101,6 +102,15 @@ services:
       STORAGE_S3_ENDPOINT: ${DIRECTUS_STORAGE_ENDPOINT:-http://vanilla-essential-backend-s3:9000}
       STORAGE_S3_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
 
+      EMAIL_TRANSPORT: 'smtp'
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.com}
+
+      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST:-smtp.gmail.com}
+      EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT:-587}
+      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER:-your.email@example.com}
+      EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD:-P@ssw0rd}
+      EMAIL_SMTP_SECURE: ${EMAIL_SMTP_SECURE:-false}
+
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Password1234!}
 
@@ -117,33 +127,33 @@ services:
       - default
       - cloudflare
 
-  backend:
-    build:
-      context: backend/
-      dockerfile: Dockerfile
-    command: "python main.py"
-    container_name: vanilla-essential-backend
-    depends_on:
-      directus:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis: 
-        condition: service_healthy
-      s3:
-        condition: service_healthy
+  # backend:
+  #   build:
+  #     context: backend/
+  #     dockerfile: Dockerfile
+  #   command: "python main.py"
+  #   container_name: vanilla-essential-backend
+  #   depends_on:
+  #     directus:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #     redis: 
+  #       condition: service_healthy
+  #     s3:
+  #       condition: service_healthy
       
-    healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:8000"]
-        interval: 5s
-        timeout: 15s
-        retries: 10
-    restart: unless-stopped
-    volumes:
-      - ./backend:/app
-    networks:
-      - default
-      - cloudflare
+  #   healthcheck:
+  #       test: ["CMD", "curl", "-f", "http://localhost:8000"]
+  #       interval: 5s
+  #       timeout: 15s
+  #       retries: 10
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./backend:/app
+  #   networks:
+  #     - default
+  #     - cloudflare
 
 volumes:
   vanilla_essential_backend_directus: &docker_volume
@@ -153,16 +163,22 @@ volumes:
       o: bind
       device: ${VOLUME_DIRECTUS:-/Users/bachkukkik/Archives/docker_volumes/vanilla_essential_backend_directus}
   vanilla_essential_backend_postgres:
-    <<: *docker_volume
+    driver: local
     driver_opts:
+      type: none
+      o: bind
       device: ${VOLUME_POSTGRES:-/Users/bachkukkik/Archives/docker_volumes/vanilla_essential_backend_postgres}
   vanilla_essential_backend_redis:
-    <<: *docker_volume
+    driver: local
     driver_opts:
+      type: none
+      o: bind
       device: ${VOLUME_REDIS:-/Users/bachkukkik/Archives/docker_volumes/vanilla_essential_backend_redis}
   vanilla_essential_backend_storage:
-    <<: *docker_volume
+    driver: local
     driver_opts:
+      type: none
+      o: bind
       device: ${VOLUME_MINIO:-/Volumes/wd-raid1/vanilla-baserow/vanilla_essential_backend_storage}
 
 networks:
