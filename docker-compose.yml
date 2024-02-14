@@ -103,6 +103,9 @@ services:
       STORAGE_S3_ENDPOINT: ${DIRECTUS_STORAGE_ENDPOINT:-http://vanilla-essential-backend-s3:9000}
       STORAGE_S3_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
 
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Password1234!}
+
       EMAIL_TRANSPORT: 'smtp'
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.com}
 
@@ -111,9 +114,6 @@ services:
       EMAIL_SMTP_USER: ${EMAIL_SMTP_USER:-your.email@example.com}
       EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD:-P@ssw0rd}
       EMAIL_SMTP_SECURE: ${EMAIL_SMTP_SECURE:-false}
-
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Password1234!}
 
       AUTH_PROVIDERS: ${AUTH_PROVIDERS:-google}
 
